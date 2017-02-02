@@ -131,7 +131,7 @@ ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --cluster_dns=${DNS_SERVICE_IP} \
   --cluster_domain=cluster.local
 ExecStop=-/usr/bin/rkt stop --uuid-file=${uuid_file}
-Restart=always
+Restart=on-failure
 RestartSec=10
 
 [Install]

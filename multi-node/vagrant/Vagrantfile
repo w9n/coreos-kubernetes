@@ -68,7 +68,7 @@ Vagrant.configure("2") do |config|
   config.ssh.insert_key = false
 
   config.vm.box = "coreos-%s" % $update_channel
-  config.vm.box_version = ">= 1151.0.0"
+  #config.vm.box_version = ">= 1151.0.0"
   config.vm.box_url = "http://%s.release.core-os.net/amd64-usr/current/coreos_production_vagrant.json" % $update_channel
 
   ["vmware_fusion", "vmware_workstation"].each do |vmware|
@@ -76,6 +76,14 @@ Vagrant.configure("2") do |config|
       override.vm.box_url = "http://%s.release.core-os.net/amd64-usr/current/coreos_production_vagrant_vmware_fusion.json" % $update_channel
     end
   end
+  
+
+  config.vm.provider :libvirt do |lib, override|
+      override.vm.box = "coreos-alpha"
+      override.vm.box_url = ""
+  end
+
+
 
   config.vm.provider :virtualbox do |v|
     # On VirtualBox, we don't have guest additions or a functional vboxsf
@@ -101,6 +109,11 @@ Vagrant.configure("2") do |config|
     vb.gui = false
   end
 
+  config.vm.provider :libvirt do |lib|
+    lib.cpus = 1
+  end
+
+
   (1..$etcd_count).each do |i|
     config.vm.define vm_name = "e%d" % i do |etcd|
 
@@ -122,6 +135,11 @@ Vagrant.configure("2") do |config|
       etcd.vm.provider :virtualbox do |vb|
         vb.memory = $etcd_vm_memory
       end
+
+      etcd.vm.provider :libvirt do |lib|
+        lib.memory = $etcd_vm_memory
+      end
+
 
       etcd.vm.network :private_network, ip: etcdIP(i)
 
@@ -149,6 +167,10 @@ Vagrant.configure("2") do |config|
       controller.vm.provider :virtualbox do |vb|
         vb.memory = $controller_vm_memory
       end
+      
+      controller.vm.provider :libvirt do |lib|
+        lib.memory = $controller_vm_memory
+      end
 
       controllerIP = controllerIP(i)
       controller.vm.network :private_network, ip: controllerIP
@@ -157,8 +179,7 @@ Vagrant.configure("2") do |config|
       provisionMachineSSL(controller,"apiserver","kube-apiserver-#{controllerIP}",controllerIPs)
 
       controller.vm.provision :file, :source => env_file, :destination => "/tmp/coreos-kube-options.env"
-      controller.vm.provision :shell, :inline => "mkdir -p /run/coreos-kubernetes && mv /tmp/coreos-kube-options.env /run/coreos-kubernetes/options.env", :privileged => true
-
+      controller.vm.provision :shell, :inline => "mkdir -p /run/coreos-kubernetes && mv /tmp/coreos-kube-options.env /run/coreos-kubernetes/options.env", :privileged => true 
       controller.vm.provision :file, :source => CONTROLLER_CLOUD_CONFIG_PATH, :destination => "/tmp/vagrantfile-user-data"
       controller.vm.provision :shell, :inline => "mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/", :privileged => true
     end
